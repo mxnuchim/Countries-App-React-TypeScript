@@ -11,12 +11,12 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import { Column, ColumnToCountryMap, Country } from '../types';
 import countriesData from '../data/countryData.json';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
+import { BsSortAlphaDown, BsSortAlphaDownAlt } from 'react-icons/bs';
 
 const columns: readonly Column[] = [
   { id: 'code', label: 'Country Code', minWidth: 100 },
   { id: 'name', label: 'Name', minWidth: 170 },
-
   {
     id: 'nameUn',
     label: 'Name (UN)',
@@ -62,8 +62,9 @@ const rows = countriesData.countries.map((country) => {
 export default function CountriesTable() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [continentFilter, setContinentFilter] = React.useState(''); // Initialize with an empty string
-  const [hasStatesFilter, setHasStatesFilter] = React.useState(''); // Initialize with an empty string
+  const [continentFilter, setContinentFilter] = React.useState('');
+  const [hasStatesFilter, setHasStatesFilter] = React.useState('');
+  const [sortOrder, setSortOrder] = React.useState('ASC'); // Initialize with 'ASC'
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -76,12 +77,23 @@ export default function CountriesTable() {
     setPage(0);
   };
 
+  const handleSort = () => {
+    setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
+  };
+
   const filteredRows = rows.filter((row) => {
     return (
       (continentFilter === '' || row.continent === continentFilter) &&
       (hasStatesFilter === '' || row.hasStates.toString() === hasStatesFilter)
     );
   });
+
+  const sortedRows = [...filteredRows]; // Create a copy of the filtered rows
+  if (sortOrder === 'ASC') {
+    sortedRows.sort((a, b) => a.nameUn.localeCompare(b.nameUn));
+  } else {
+    sortedRows.sort((a, b) => b.nameUn.localeCompare(a.nameUn));
+  }
 
   return (
     <Paper sx={{ width: '100%', overflow: 'hidden', padding: '2%' }}>
@@ -90,7 +102,7 @@ export default function CountriesTable() {
           display: 'flex',
           flexDirection: 'row',
           gap: '30px',
-          marginY: '30px',
+          marginY: '10px',
         }}
       >
         <Box
@@ -152,13 +164,37 @@ export default function CountriesTable() {
                   align={column.align}
                   style={{ minWidth: column.minWidth }}
                 >
-                  {column.label}
+                  {column.id === 'nameUn' ? (
+                    <Box
+                      component="span"
+                      onClick={() => handleSort()}
+                      style={{
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        gap: '10px',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {column.label}
+
+                      <Button variant="contained">
+                        {sortOrder === 'ASC' ? (
+                          <BsSortAlphaDown />
+                        ) : (
+                          <BsSortAlphaDownAlt />
+                        )}
+                      </Button>
+                    </Box>
+                  ) : (
+                    column.label
+                  )}
                 </TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredRows
+            {sortedRows
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((row) => {
                 return (
@@ -182,7 +218,7 @@ export default function CountriesTable() {
       <TablePagination
         rowsPerPageOptions={[10, 25, 100]}
         component="div"
-        count={filteredRows.length}
+        count={sortedRows.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
